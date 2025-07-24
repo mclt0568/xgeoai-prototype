@@ -1,0 +1,8 @@
+@use "./variables.scss" as *;
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital@0;1&display=swap');
+
+body {
+  margin: 0;
+  font-family: 'IBM Plex Sans', sans-serif;
+  color: $foreground;
+}
