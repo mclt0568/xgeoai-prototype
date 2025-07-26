@@ -1,5 +1,5 @@
 <template>
-  <div class="range-input" :style="cssValueRef">
+  <div class="range-input" :style="cssValueRef" :class="{dragged}">
     <div class="structure">
       <div class="label" @mousedown="onLabelMouseDown">{{ props.label }}</div>
       <input ref="inputRef" @focus="selectAll" @change="onTextChange" :value="format(valueRef)" />
@@ -58,10 +58,12 @@ function onTextChange(event: Event) {
 }
 
 // draggable logic
+const dragged = ref(false);
 let startX = 0;
 let startValue = 0;
 
 function onLabelMouseDown(event: MouseEvent) {
+  dragged.value = true;
   startX = event.clientX;
   startValue = valueRef.value;
 
@@ -90,6 +92,7 @@ function onMouseMove(event: MouseEvent) {
 function onMouseUp() {
   window.removeEventListener("mousemove", onMouseMove);
   window.removeEventListener("mouseup", onMouseUp);
+  dragged.value = false;
 }
 
 // input auto focus
@@ -128,7 +131,7 @@ function selectAll() {
     border: solid 1px $border;
   }
   
-  &:has(input:focus) {
+  &:has(input:focus), &.dragged {
     // background: $background-interaction;
     border: solid 1px $accent-weak;
   }
