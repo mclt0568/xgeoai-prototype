@@ -9,7 +9,7 @@
         <div ref="map" id="map"></div>
       </div>
       <div class="toolbox-container">
-        <range-input v-model:value="x" label="hello" :round-to="4"/>
+        <main-toolbox />
       </div>
     </div>
   </div>

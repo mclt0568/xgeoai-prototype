@@ -2,7 +2,7 @@
   <div class="range-input" :style="cssValueRef">
     <div class="structure">
       <div class="label" @mousedown="onLabelMouseDown">{{ props.label }}</div>
-      <input @change="onTextChange" :value="format(valueRef)" />
+      <input ref="inputRef" @focus="selectAll" @change="onTextChange" :value="format(valueRef)" />
       <span class="suffix">{{ props.suffix }}</span>
     </div>
     <div class="progress">
@@ -46,14 +46,15 @@ function computeCssValue(value: number) {
 
 watch(() => props.value, (newVal) => {
   valueRef.value = newVal;
-  cssValueRef.value = computeCssValue(newVal);
 });
 
 function onTextChange(event: Event) {
   const newValue = (event.target as HTMLInputElement).value;
   const parsedValue = props.parse(newValue);
   valueRef.value = parsedValue;
-  emit("update:value", parsedValue);
+  const clamped = Math.min(props.max, Math.max(props.min, parsedValue));
+  cssValueRef.value = computeCssValue(clamped);
+  emit("update:value", clamped);
 }
 
 // draggable logic
@@ -82,12 +83,22 @@ function onMouseMove(event: MouseEvent) {
   // clamp between min and max
   const clamped = Math.min(props.max, Math.max(props.min, newValue));
   valueRef.value = clamped;
+  cssValueRef.value = computeCssValue(clamped);
   emit("update:value", clamped);
 }
 
 function onMouseUp() {
   window.removeEventListener("mousemove", onMouseMove);
   window.removeEventListener("mouseup", onMouseUp);
+}
+
+// input auto focus
+const inputRef = ref<HTMLInputElement | null>(null);
+
+function selectAll() {
+  requestAnimationFrame(() => {
+    inputRef.value?.select();
+  });
 }
 
 
@@ -98,21 +109,27 @@ function onMouseUp() {
 
 .range-input {
   box-sizing: border-box;
+  border-radius: 5px;
   background: $background-secondary;
   width: 100%;
-  height: 30px;
+  height: 28px;
   border: solid 1px $background-secondary;
   position: relative;
+
+  * {
+    font-size: 14px;
+  }
 
   &>div {
     position: absolute;
   }
 
   &:hover {
-    background: $background-interaction;
+    border: solid 1px $border;
   }
-
+  
   &:has(input:focus) {
+    // background: $background-interaction;
     border: solid 1px $accent-weak;
   }
 }
@@ -140,9 +157,10 @@ function onMouseUp() {
     border-radius: 0;
     outline: none;
     flex: 1;
-    height: 100%;
+    width: 0px;
+    height: calc(100% - 2px);
     text-align: right;
-    padding: 0px;
+    padding: 0px 0px 2px 0px;
     padding-right: 4px;
     line-height: 100%;
   }
