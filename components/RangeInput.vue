@@ -2,7 +2,7 @@
   <div class="range-input" :style="cssValueRef" :class="{dragged}">
     <div class="structure">
       <div class="label" @mousedown="onLabelMouseDown">{{ props.label }}</div>
-      <input ref="inputRef" @focus="selectAll" @change="onTextChange" :value="format(valueRef)" />
+      <input ref="inputRef" @focus="selectAll" @mouseup.prevent @change="onTextChange" :value="format(valueRef)" />
       <span class="suffix">{{ props.suffix }}</span>
     </div>
     <div class="progress">
