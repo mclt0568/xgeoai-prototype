@@ -6,59 +6,39 @@
     </div>
     <div class="container">
       <div class="map-container">
-        <div ref="map" id="map"></div>
+        <div class="docked">
+          <map-render :data="inspectingFactor === undefined ? (dataSetStore.modelResult ?? {}) : dataSetStore.configurations[inspectingFactor]?.cachedConfiguredDataMap" map-id="map-model-output" />
+        </div>
+        <div class="inspecting-overlay" :class="{'hidden': inspectingFactor === undefined}">
+          <div class="inspection-tag">
+            <div class="inspection-info">Inspecting Dataset: {{ fieldToName[inspectingFactor ?? "score_km"] }}</div>
+            <button @click="closeInspection" class="inspection-close">Close</button>
+          </div>
+        </div>
       </div>
       <div class="toolbox-container">
-        <main-toolbox />
+        <main-toolbox @inspect="inspectFactor" :configurations="dataSetStore.configurations" />
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import mapboxgl from 'mapbox-gl'
-import { initMap } from './utils/map';
-import { getData, toGridGeoJSON } from './utils/data';
-
-const x = ref(0.6);
-
 useHead({title: "XGeoAI Prototype"})
 
-onMounted(async () => {
-  const config = useRuntimeConfig();
-  mapboxgl.accessToken = config.public.mapboxToken;
+const dataSetStore = useDatasetStore();
+dataSetStore.loadData("/data/data.csv");
 
-  const map = initMap("map");
+// inspect and adjust
+const inspectingFactor = ref<ScoreFieldKeys | undefined>(undefined);
+function inspectFactor(scoreKey: ScoreFieldKeys) {
+  inspectingFactor.value = scoreKey;
+}
 
-  const data = await getData("/data/data.csv");
+function closeInspection() {
+  inspectingFactor.value = undefined;
+}
 
-  map.on("load", ()=>{
-    map.addSource("avg-capacity-factor", {
-      type: "geojson",
-      data:  toGridGeoJSON(data),
-    });
-
-    map.addLayer({
-      id: 'grid-fill',
-      type: 'fill',
-      source: 'avg-capacity-factor',
-      paint: {
-        'fill-color': [
-          'interpolate',
-          ['linear'],
-          ['get', 'value'],
-          0.0, '#4575b4',
-          0.25, '#91bfdb',
-          0.5, '#ffffbf',
-          0.75, '#fdae61',
-          1.0, '#d73027'
-        ],
-        'fill-opacity': 0.7,
-        'fill-outline-color': 'rgba(0, 0, 0, 0)'
-      }
-    });
-  })
-})
 </script>
 
 <style lang="scss" scoped>
@@ -120,6 +100,59 @@ onMounted(async () => {
 
 .map-container {
   flex: 1;
+  position: relative;
+
+  &>div {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+  }
+
+  .inspecting-overlay {
+    box-shadow: inset 0 0 30px $inspection-glow;
+    pointer-events: none;
+    transition: box-shadow ease 0.3s;
+    
+    &.hidden {
+      box-shadow: none;
+      
+      .inspection-tag {
+        margin-left: -20px;
+        opacity: 0;
+      }
+    }
+    
+    .inspection-tag {
+      transition: ease 0.3s;
+      margin: 8px 0 0 8px;
+      pointer-events: all;
+      display: flex;
+      height: 25px;
+      width: fit-content;
+      background: $inspection-accent;
+      border-radius: 4px;
+      align-items: center;
+      user-select: none;
+    }
+
+    .inspection-info {
+      color: $background;
+      font-size: 12px;
+      padding: 0 10px;
+    }
+    
+    button {
+      color: $background;
+      background: transparent;
+      padding: 5px 10px;
+      font-size: 12px;
+      border: 0;
+      border-left: 1px solid $inspection-border;
+      font-weight: 600;
+    }
+  }
 }
 
 #map {

@@ -3,6 +3,7 @@ export function isParsableNumber(value: string): boolean {
   return !isNaN(num) && isFinite(num);
 }
 
-// export function c(classes: {[key: string]: boolean}): string {
-//   return Object.entries(classes).filter(c => c[1]).map(c => c[0]).join(" ");
-// }
+export function isEmpty(obj: object): boolean {
+  for (const _ in obj) return false;
+  return true;
+}

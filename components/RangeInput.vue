@@ -46,6 +46,7 @@ function computeCssValue(value: number) {
 
 watch(() => props.value, (newVal) => {
   valueRef.value = newVal;
+  cssValueRef.value = computeCssValue(newVal);
 });
 
 function onTextChange(event: Event) {

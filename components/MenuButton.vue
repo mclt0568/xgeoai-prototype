@@ -1,5 +1,5 @@
 <template>
-  <button class="menu-button" :class="{warning}"><Icon v-if="icon" :icon="icon" />{{ label }}</button>
+  <button @click="onButtonClick" class="menu-button" :class="{warning}"><Icon v-if="icon" :icon="icon" />{{ label }}</button>
 </template>
 
 <script lang="ts" setup>
@@ -14,6 +14,11 @@ const props = withDefaults(defineProps<{
   icon: undefined,
   warning: false,
 });
+
+const emits = defineEmits(["click"]);
+function onButtonClick() {
+  emits("click");
+}
 
 </script>
 
