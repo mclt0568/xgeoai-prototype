@@ -7,7 +7,7 @@
     <div class="container">
       <div class="map-container">
         <div class="docked">
-          <map-render :data="inspectingFactor === undefined ? (dataSetStore.modelResult ?? {}) : dataSetStore.configurations[inspectingFactor]?.cachedConfiguredDataMap" map-id="map-model-output" />
+          <map-render :data="dataSetStore.modelOutput" map-id="map-model-output" />
         </div>
         <div class="inspecting-overlay" :class="{'hidden': inspectingFactor === undefined}">
           <div class="inspection-tag">
@@ -16,8 +16,8 @@
           </div>
         </div>
       </div>
-      <div class="toolbox-container">
-        <main-toolbox @inspect="inspectFactor" :configurations="dataSetStore.configurations" />
+      <div  class="toolbox-container">
+        <main-toolbox v-show="inspectingFactor === undefined" @inspect="inspectFactor" :configurations="dataSetStore.currentConfigSet" />
       </div>
     </div>
   </div>

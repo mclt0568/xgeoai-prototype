@@ -1,11 +1,11 @@
 <template>
   <div class="model-configuration">
     <div @click="toggleModel" class="model-toggle">
-      <toggle :toggled="configuration.contribution !== 0" />
-      {{ configuration.name }}
+      <toggle :toggled="configuration.enabled" />
+      {{ fieldToName[configuration.field] }}
     </div>
-    <div class="model-options" v-show="configuration.contribution !== 0">
-      <range-input :min="0.01" :max="0.99" @update:value="throttledUpdate" :value="configuration.contribution" label="Contribution" />
+    <div class="model-options" v-show="configuration.enabled">
+      <range-input :min="0.01" :max="0.99" @update:value="throttledUpdate" :value="configuration.scale" label="Contribution" />
       <menu-button @click="onInspectionClick" :icon="configuration.biased ? 'carbon:warning-alt-filled' : undefined" :warning="configuration.biased" label="Inspect and adjust data..."/>
     </div>
   </div>
@@ -21,20 +21,16 @@ const props = withDefaults(defineProps<{
 
 const datasetStore = useDatasetStore();
 function toggleModel() {
-  if (props.configuration.contribution !== 0){
-    datasetStore.setContribution(props.configuration.fieldName, 0);
-  }
-  else {
-    datasetStore.setContribution(props.configuration.fieldName, 0.2);
-  }
-  datasetStore.runModel();
+  const enabled = props.configuration.enabled;
+  datasetStore.setContribution(props.configuration.field, enabled ? 0 : 0.2);
+  props.configuration.enabled = !enabled;
 }
 
 function updateModel(value: number) {
-  datasetStore.setContribution(props.configuration.fieldName, value);
+  datasetStore.setContribution(props.configuration.field, value);
   datasetStore.runModel();
 }
-const throttledUpdate = throttle(updateModel, 80);
+const throttledUpdate = throttle(updateModel, 20);
 
 // when button press
 const emit = defineEmits<{
@@ -42,7 +38,7 @@ const emit = defineEmits<{
 }>();
 
 function onInspectionClick() {
-  emit("inspect", props.configuration.fieldName);
+  emit("inspect", props.configuration.field);
 }
 
 </script>

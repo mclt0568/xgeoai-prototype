@@ -9,10 +9,8 @@ import { onMounted, watch, shallowRef } from 'vue';
 
 const props = withDefaults(defineProps<{
   mapId: string;
-  data: DataMap;
+  data: ModelData[];
 }>(), {});
-
-console.log(dataMapToGeoJSON(props.data));
 
 // Hold the map instance
 const map = shallowRef<mapboxgl.Map | null>(null);
@@ -28,7 +26,7 @@ onMounted(() => {
     // Add the initial data source and layer
     instance.addSource('grid', {
       type: 'geojson',
-      data: dataMapToGeoJSON(props.data),
+      data: dataArrayToGeoJSON(props.data),
     });
 
     instance.addLayer({
@@ -60,7 +58,7 @@ watch(
     if (mapInstance && mapInstance.isStyleLoaded()) {
       const source = mapInstance.getSource('grid') as mapboxgl.GeoJSONSource;
       if (source) {
-        source.setData(dataMapToGeoJSON(newData));
+        source.setData(dataArrayToGeoJSON(newData));
       }
     }
   },
