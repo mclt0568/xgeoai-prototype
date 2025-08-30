@@ -38,11 +38,11 @@ onMounted(() => {
           'interpolate',
           ['linear'],
           ['get', 'value'],
-          0, '#4575b4',
-          25, '#91bfdb',
-          50, '#ffffbf',
-          75, '#fdae61',
-          100, '#d73027'
+          0, '#DF342B',
+          25, '#fdae61',
+          50, '#F3FFBF',
+          75, '#91DBA2',
+          100, '#45B464',
         ],
         'fill-opacity': 0.7,
         'fill-outline-color': 'rgba(0, 0, 0, 0)'
