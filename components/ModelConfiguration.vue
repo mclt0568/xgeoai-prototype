@@ -27,7 +27,7 @@ function toggleModel() {
 }
 
 function updateModel(value: number) {
-  datasetStore.setContribution(props.configuration.field, value);
+  datasetStore.setContribution(props.configuration.field, value, true);
   datasetStore.runModel();
 }
 const throttledUpdate = throttle(updateModel, 20);

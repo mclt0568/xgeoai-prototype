@@ -3,7 +3,6 @@ import { defineStore } from 'pinia'
 import { isOfType } from '@/utils/misc';
 import * as dfd from "danfojs";
 
-
 const FIELD_KEEP = ["Latitude", "Longitude"];
 
 export const MODEL_OUTPUT = "_model_output";
@@ -55,7 +54,10 @@ export const useDatasetStore = defineStore('dataset', () => {
     if (df === undefined) return;
     
     let _df = df;
-    _df.addColumn(scaledFieldOf(field), _df[adjustedFieldOf(field)].values, { inplace: true });
+
+    const scale = currentConfigSet.value[field].scale;
+
+    _df.addColumn(scaledFieldOf(field), _df[adjustedFieldOf(field)].mul(scale), { inplace: true });
 
 
     if (preventModelExec) {
@@ -70,19 +72,29 @@ export const useDatasetStore = defineStore('dataset', () => {
     const currentConfigs = currentConfigSet.value;
     const scales: [ScoreFieldKeys, number][] = (Object.entries(currentConfigs) as [ScoreFieldKeys, Configuration][]).map(([f, c]) => ([f, c.scale]));
     let totalOthers = 0;
+
+
+    // sum (fields without `field`)
     scales.forEach(([f, c]) => {
       if (f === field) return;
       totalOthers += c;
     });
+
+
     const newTotal = 1 - contribution;
+
+    
     // const newScales: [ScoreFieldKeys, number][] = [];
     scales.forEach(([f, c]) => {
       if (f === field) {
-        currentConfigSet.value[f].scale = c;
+        currentConfigSet.value[f].scale = contribution;
+        applyContribution(f, true);
         return;
       }
       
       currentConfigSet.value[f].scale = (c / totalOthers) * newTotal;
+
+      applyContribution(f, true);
     });
 
     if (preventModelExec) {
@@ -101,12 +113,15 @@ export const useDatasetStore = defineStore('dataset', () => {
     _df.addColumn(MODEL_OUTPUT, Array(_df.shape[0]).fill(0), { inplace: true });
     
     const currentConfigsEntries = Object.entries(currentConfigSet.value) as [ScoreFieldKeys, Configuration][];
-    
-    currentConfigsEntries.forEach(([f, config]) => {
-      _df.addColumn(scaledFieldOf(f), _df[adjustedFieldOf(f)].mul(config.scale), { inplace: true });
-    })
 
-    const summed = _df.loc({ columns: [...currentConfigsEntries.map(e => e[0]).map(scaledFieldOf)] }).sum({ axis: 1 });
+    const columns = [...currentConfigsEntries.map(e => e[0]).map(scaledFieldOf)];
+    const summed = _df.loc({ columns }).sum({ axis: 1 });
+
+    console.log(currentConfigSet.value.score_km.scale);
+    _df.loc({ columns: ["_scaled_score_km", "score_km"] }).print();
+    summed.print();
+    
+    
     _df.addColumn(MODEL_OUTPUT, summed, { inplace: true });
 
     df = _df;
