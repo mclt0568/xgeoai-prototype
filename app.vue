@@ -7,7 +7,7 @@
     <div class="container">
       <div class="map-container">
         <div class="docked">
-          <map-render :data="dataSetStore.modelOutput" map-id="map-model-output" />
+          <map-render :data="datasetStore.modelOutput" map-id="map-model-output" />
         </div>
         <div class="inspecting-overlay" :class="{'hidden': inspectingFactor === undefined}">
           <div class="inspection-tag">
@@ -17,7 +17,7 @@
         </div>
       </div>
       <div  class="toolbox-container">
-        <main-toolbox v-show="inspectingFactor === undefined" @inspect="inspectFactor" :configurations="dataSetStore.currentConfigSet" />
+        <main-toolbox :result="datasetStore.modelOutput" v-show="inspectingFactor === undefined" @inspect="inspectFactor" :configurations="datasetStore.currentConfigSet" />
       </div>
     </div>
   </div>
@@ -26,8 +26,8 @@
 <script lang="ts" setup>
 useHead({title: "XGeoAI Prototype"})
 
-const dataSetStore = useDatasetStore();
-dataSetStore.loadData("/data/data.csv");
+const datasetStore = useDatasetStore();
+datasetStore.loadData("/data/data.csv");
 
 // inspect and adjust
 const inspectingFactor = ref<ScoreFieldKeys | undefined>(undefined);

@@ -36,7 +36,7 @@ const props = withDefaults(defineProps<{
 })
 
 // textbox and value
-const emit = defineEmits<{ (event: "update:value", value: number): void }>();
+const emit = defineEmits<{ (event: "update:value", value: number): void, (event: "release", value: number): void }>();
 const valueRef: Ref<number> = ref(props.value);
 const cssValueRef: Ref<string> = ref(computeCssValue(props.value));
 
@@ -56,6 +56,18 @@ function onTextChange(event: Event) {
   const clamped = Math.min(props.max, Math.max(props.min, parsedValue));
   cssValueRef.value = computeCssValue(clamped);
   emit("update:value", clamped);
+  emit("release", clamped);
+}
+
+function onRelease() {
+  if (inputRef.value === null) return;
+  
+  const newValue = inputRef.value.value;
+  const parsedValue = props.parse(newValue);
+  valueRef.value = parsedValue;
+  const clamped = Math.min(props.max, Math.max(props.min, parsedValue));
+  cssValueRef.value = computeCssValue(clamped);
+  emit("release", clamped);
 }
 
 // draggable logic
@@ -94,6 +106,7 @@ function onMouseUp() {
   window.removeEventListener("mousemove", onMouseMove);
   window.removeEventListener("mouseup", onMouseUp);
   dragged.value = false;
+  onRelease();
 }
 
 // input auto focus

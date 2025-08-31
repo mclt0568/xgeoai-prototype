@@ -115,13 +115,7 @@ export const useDatasetStore = defineStore('dataset', () => {
     const currentConfigsEntries = Object.entries(currentConfigSet.value) as [ScoreFieldKeys, Configuration][];
 
     const columns = [...currentConfigsEntries.map(e => e[0]).map(scaledFieldOf)];
-    const summed = _df.loc({ columns }).sum({ axis: 1 });
-
-    console.log(currentConfigSet.value.score_km.scale);
-    _df.loc({ columns: ["_scaled_score_km", "score_km"] }).print();
-    summed.print();
-    
-    
+    const summed = _df.loc({ columns }).sum({ axis: 1 }).round();
     _df.addColumn(MODEL_OUTPUT, summed, { inplace: true });
 
     df = _df;

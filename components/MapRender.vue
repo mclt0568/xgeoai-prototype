@@ -6,6 +6,7 @@
 import 'mapbox-gl/dist/mapbox-gl.css';
 import mapboxgl from 'mapbox-gl';
 import { onMounted, watch, shallowRef } from 'vue';
+import { mapScheme } from '~/utils/visualisation';
 
 const props = withDefaults(defineProps<{
   mapId: string;
@@ -38,11 +39,12 @@ onMounted(() => {
           'interpolate',
           ['linear'],
           ['get', 'value'],
-          0, '#DF342B',
-          25, '#fdae61',
-          50, '#F3FFBF',
-          75, '#91DBA2',
-          100, '#45B464',
+          // 0, '#DF342B',
+          // 25, '#fdae61',
+          // 50, '#F3FFBF',
+          // 75, '#91DBA2',
+          // 100, '#45B464',
+          ...(mapScheme.flatMap(x => x))
         ],
         'fill-opacity': 0.7,
         'fill-outline-color': 'rgba(0, 0, 0, 0)'

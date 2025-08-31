@@ -44,3 +44,19 @@ export function initMap(mapName: string) {
 
   return map
 }
+
+export const mapScheme: Array<[number, string]>  = [
+  [0, '#DF342B',],
+  [25, '#fdae61',],
+  [50, '#F3FFBF',],
+  [75, '#91DBA2',],
+  [100, '#45B464',],
+]
+
+export const chartScheme: Array<[number, string]>  = [
+  [0, '#F60C00FF',],
+  [25, '#FE7F00FF',],
+  [50, '#A29B0BFF',],
+  [75, '#00D231FF',],
+  [100, '#00EA42FF',],
+]

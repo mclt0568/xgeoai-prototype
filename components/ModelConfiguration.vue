@@ -5,14 +5,14 @@
       {{ fieldToName[configuration.field] }}
     </div>
     <div class="model-options" v-show="configuration.enabled">
-      <range-input :min="0.01" :max="0.99" @update:value="throttledUpdate" :value="configuration.scale" label="Contribution" />
+      <range-input :min="0.01" :max="0.99" @release="updateModel" :value="configuration.scale" label="Contribution" />
       <menu-button @click="onInspectionClick" :icon="configuration.biased ? 'carbon:warning-alt-filled' : undefined" :warning="configuration.biased" label="Inspect and adjust data..."/>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { throttle } from 'lodash';
+import { throttle, update } from 'lodash';
 
 
 const props = withDefaults(defineProps<{
@@ -30,7 +30,7 @@ function updateModel(value: number) {
   datasetStore.setContribution(props.configuration.field, value, true);
   datasetStore.runModel();
 }
-const throttledUpdate = throttle(updateModel, 20);
+// const throttledUpdate = throttle(updateModel, 20);
 
 // when button press
 const emit = defineEmits<{
