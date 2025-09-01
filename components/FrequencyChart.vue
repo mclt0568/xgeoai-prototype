@@ -146,6 +146,7 @@ function draw() {
         .attr("fill", "#8D8D8D")
       })
       .on("mouseleave", function () {
+        /* @ts-ignore */
         svg.selectAll(".bars rect").attr("fill", d => color(((d.x0 ?? 0) + (d.x1 ?? 0)) / 2));
         overlay.selectAll("*").remove();
         svg.select(".x-axis").attr("opacity", "1");
