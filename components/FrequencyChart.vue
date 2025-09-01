@@ -38,7 +38,7 @@ function draw() {
   // layout
   const width = wrap.value.clientWidth || 600;
   const height = wrap.value.clientHeight || 300;
-  const margin = { top: 16, right: 16, bottom: 56, left: 48 };
+  const margin = { top: 16, right: 16, bottom: 38, left: 48 };
 
   // prep data, cast to number and remove illegal numbers
   const raw = (props.values ?? []).map(v => +v).filter(v => Number.isFinite(v));
@@ -58,8 +58,7 @@ function draw() {
 
   const bins = bin(enumerated);
 
-  // scales
-    // Scales
+  // scales (input -> pixels)
   const x = d3.scaleLinear()
     .domain([min, max])
     .range([margin.left, width - margin.right]);
@@ -100,22 +99,62 @@ function draw() {
       .attr("width", d => Math.max(0, x(d.x1!) - x(d.x0!) - 0)) // 1px gap
       .attr("height", d => y(0) - y(d.length))
       .attr("fill", d => color(((d.x0 ?? 0) + (d.x1 ?? 0)) / 2))
-      .on("mouseenter", function (event, d){
+      .on("mouseenter", function (event, d: d3.Bin<{v: number, i: number}, number>){
+        console.log(d);
         
-        // dim bars
-        bars.attr("fill", "lightgray");
+        // highlight bar
+        svg.selectAll(".bars rect").attr("fill", "lightgray");
         d3.select(this).attr("fill", color(((d.x0 ?? 0) + (d.x1 ?? 0)) / 2));
-        drawYAxis();
+
+        const labelFmt = d3.format("~s");
+        const tickLen = 6;
+        const labelPad = 6;
+        const yPos = y(d.length);
+
+        // a line
+        overlay.append("line")
+          .attr("x1", margin.left)
+          .attr("x2", width - margin.right)
+          .attr("y1", yPos)
+          .attr("y2", yPos)
+          .attr("stroke", "#E1E1E1")
+          .attr("stroke-width", 1);
+
+        // the y label
+        overlay.append("text")
+          .attr("x", margin.left - tickLen - labelPad)
+          .attr("y", yPos)
+          .attr("font-size", 10)
+          .attr("fill", "#8D8D8D")
+          .attr("dy", "0.32em")               // vertical centering
+          .attr("text-anchor", "end")         // text sits to the left
+          .attr("class", "y-hover-label")
+          .text(labelFmt(d.length));
+
+        // hide x-axis
+        svg.select(".x-axis").attr("opacity", "0");
+
+        // draw new x-axis
+        overlay.selectAll("text.bin-label")
+        .data([d])
+        .join(enter => enter.append("text").attr("class", "bin-label"))
+        .attr("x", x((d.x0! + d.x1!) / 2))
+        .attr("y", height - 20)
+        .attr("text-anchor", "middle")
+        .text(`${d.x0}-${d.x1}`)
+        .attr("font-size", 10)
+        .attr("fill", "#8D8D8D")
       })
       .on("mouseleave", function () {
-        // reset all bars to their original colour
-        bars.attr("fill", d => color(((d.x0 ?? 0) + (d.x1 ?? 0)) / 2));
-
-        // clear overlay if you want
+        svg.selectAll(".bars rect").attr("fill", d => color(((d.x0 ?? 0) + (d.x1 ?? 0)) / 2));
         overlay.selectAll("*").remove();
+        svg.select(".x-axis").attr("opacity", "1");
       })
     .append("title")
       .text(d => `range: [${d.x0}, ${d.x1})\ncount: ${d.length}`);
+
+  const overlay = svg.append("g").attr("class", "hover");
+    
 
   // x axis label
   const xAxis = (g: d3.Selection<SVGGElement, unknown, null, undefined>) =>
@@ -137,63 +176,7 @@ function draw() {
       .attr("fill", "currentColor")
       .attr("text-anchor", "end")
     );
-
-  // y axis label
-  const overlay = svg.append("g").attr("class", "y-hover");
-  
-  const drawYAxis = () => {
-    const labelFmt = d3.format("~s");
-    const tickLen = 6;
-    const labelPad = 6;
-
-    svg.append("g")
-      .selectAll("rect")
-      .data(bins)
-      .join("rect")
-        .attr("x", d => x(d.x0!))
-        .attr("y", d => y(d.length))
-        .attr("width", d => Math.max(0, x(d.x1!) - x(d.x0!) - 1))
-        .attr("height", d => y(0) - y(d.length))
-        .attr("rx", 2)
-        .attr("fill", d => color(((d.x0 ?? 0) + (d.x1 ?? 0)) / 2))
-        .on("mouseenter", (event, d) => {
-          // clear previous hover marks
-          overlay.selectAll("*").remove();
-
-          const yPos = y(d.length);
-
-          // a line
-          overlay.append("line")
-            .attr("x1", margin.left + width)
-            .attr("x2", margin.left)
-            .attr("y1", yPos)
-            .attr("y2", yPos)
-            .attr("stroke", "#E1E1E1")
-            .attr("stroke-width", 1);
-
-          // the label (count) aligned to left of plot area
-          overlay.append("text")
-            .attr("x", margin.left - tickLen - labelPad)
-            .attr("y", yPos)
-            .attr("font-size", 10)
-            .attr("fill", "#8D8D8D")
-            .attr("dy", "0.32em")               // vertical centering
-            .attr("text-anchor", "end")         // text sits to the left
-            .attr("class", "y-hover-label")
-            .text(labelFmt(d.length));
-
-          // (keep your console logging if you want)
-          const indices = d.map(e => e.i);
-          console.log(`bin=[${d.x0}, ${d.x1}) count=${d.length} indices=[${indices.join(", ")}]`);
-        })
-        .on("mouseleave", () => {
-          overlay.selectAll("*").remove();       // hide when not hovering
-        })
-      .append("title")
-        .text(d => `range: [${d.x0}, ${d.x1})\ncount: ${d.length}`);
-  }
-
-svg.append("g").call(xAxis);
+  svg.append("g").call(xAxis).attr("class", "x-axis");
 }
 
 onMounted(() => {
@@ -224,5 +207,9 @@ watch(() => props.values, () => draw(), { deep: false });
   fill: none;
   stroke: #E1E1E1;
   stroke-width: 2;
+}
+
+.chart :deep(.hover) {
+  pointer-events: none;
 }
 </style>

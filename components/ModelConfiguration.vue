@@ -5,7 +5,7 @@
       {{ fieldToName[configuration.field] }}
     </div>
     <div class="model-options" v-show="configuration.enabled">
-      <range-input :min="0.01" :max="0.99" @release="updateModel" :value="configuration.scale" label="Contribution" />
+      <range-input :min="0.01" :max="0.99" @update:value="updateModel" :value="configuration.scale" label="Contribution" />
       <menu-button @click="onInspectionClick" :icon="configuration.biased ? 'carbon:warning-alt-filled' : undefined" :warning="configuration.biased" label="Inspect and adjust data..."/>
     </div>
   </div>
