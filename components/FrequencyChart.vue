@@ -13,6 +13,11 @@ const props = withDefaults(defineProps<{
   binSize: 1.5,
 });
 
+const emit = defineEmits<{
+  "filter": [number, number],
+  "cancelFilter": [],
+}>()
+
 const wrap = ref<HTMLElement | null>(null);
 let ro: ResizeObserver | null = null;
 
@@ -88,8 +93,15 @@ function draw() {
   .attr("width", width - margin.left - margin.right)
   .attr("height", height - margin.top - margin.bottom);
 
+  svg.on("mouseleave", function() {
+    emit("cancelFilter");
+  })
+
   // bars
-  const bars = svg.append("g")
+  svg.append("g")
+    .on("mouseleave", function() {
+      emit("cancelFilter");
+    })
     .call(s => s.attr("class", "bars"))
     .selectAll("rect")
     .data(bins)
@@ -99,8 +111,7 @@ function draw() {
       .attr("width", d => Math.max(0, x(d.x1!) - x(d.x0!) - 0)) // 1px gap
       .attr("height", d => y(0) - y(d.length))
       .attr("fill", d => color(((d.x0 ?? 0) + (d.x1 ?? 0)) / 2))
-      .on("mouseenter", function (event, d: d3.Bin<{v: number, i: number}, number>){
-        console.log(d);
+      .on("mouseenter", function (_, d: d3.Bin<{v: number, i: number}, number>){
         
         // highlight bar
         svg.selectAll(".bars rect").attr("fill", "lightgray");
@@ -144,6 +155,9 @@ function draw() {
         .text(`${d.x0}-${d.x1}`)
         .attr("font-size", 10)
         .attr("fill", "#8D8D8D")
+
+        // emit filter
+        emit("filter", d.x0 ?? 0, d.x1 ?? 0);
       })
       .on("mouseleave", function () {
         /* @ts-ignore */

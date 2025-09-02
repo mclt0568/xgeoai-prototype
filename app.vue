@@ -7,23 +7,32 @@
     <div class="container">
       <div class="map-container">
         <div class="docked">
-          <map-render :data="datasetStore.modelOutput" map-id="map-model-output" />
+          <map-render :data="filteredResult" map-id="map-model-output" />
         </div>
         <div class="inspecting-overlay" :class="{'hidden': inspectingFactor === undefined}">
           <div class="inspection-tag">
-            <div class="inspection-info">Inspecting Dataset: {{ fieldToName[inspectingFactor ?? "score_km"] }}</div>
+            <div class="inspection-info">Inspecting Dataset: {{ inspectingFactor ? fieldToName[inspectingFactor] : "Not inspecting" }}</div>
             <button @click="closeInspection" class="inspection-close">Close</button>
           </div>
         </div>
       </div>
       <div  class="toolbox-container">
-        <main-toolbox :result="datasetStore.modelOutput" v-show="inspectingFactor === undefined" @inspect="inspectFactor" :configurations="datasetStore.currentConfigSet" />
+        <main-toolbox
+          :result="datasetStore.modelOutput"
+          v-show="inspectingFactor === undefined"
+          @inspect="inspectFactor"
+          :configurations="datasetStore.currentConfigSet"
+          @filter="onFilter"
+          @cancel-filter="onFilterCancel"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { filter } from 'lodash';
+
 useHead({title: "XGeoAI Prototype"})
 
 const datasetStore = useDatasetStore();
@@ -38,6 +47,28 @@ function inspectFactor(scoreKey: ScoreFieldKeys) {
 function closeInspection() {
   inspectingFactor.value = undefined;
 }
+
+// filter model output
+const filterRange = ref<[number, number]|undefined>(undefined);
+function onFilter(x0: number, x1: number) {
+  filterRange.value = [x0, x1];
+  console.log("Filter");
+}
+function onFilterCancel(){
+  filterRange.value = undefined;
+  console.log("thing");
+}
+
+// filtered result
+const filteredResult = computed(() => {
+  if (filterRange.value === undefined){
+    return datasetStore.modelOutput;
+  }
+
+  const [x0, x1] = filterRange.value as [number, number];
+
+  return datasetStore.modelOutput.filter(({value}) => value >= x0 && value < x1);
+})
 
 </script>
 
@@ -54,7 +85,7 @@ function closeInspection() {
 }
 
 .title {
-  height: 40px;
+  min-height: 40px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -93,7 +124,7 @@ function closeInspection() {
 }
 
 .container {
-  flex: 1;
+  height: calc(100vh - 40px);
   display: flex;
   align-items: stretch;
 }
@@ -163,6 +194,7 @@ function closeInspection() {
 .toolbox-container {
   width: 300px;
   border-left: $border 1px solid;
+  overflow: scroll;
 }
 
 </style>
