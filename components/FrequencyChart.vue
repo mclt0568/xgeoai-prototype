@@ -5,6 +5,7 @@
 <script setup lang="ts">
 import * as d3 from "d3";
 import { ref, onMounted, onBeforeUnmount, watch, defineProps } from "vue";
+import { max, min } from "~/utils/misc";
 
 const props = withDefaults(defineProps<{
   values: Array<number | string>;
@@ -20,6 +21,66 @@ const emit = defineEmits<{
 
 const wrap = ref<HTMLElement | null>(null);
 let ro: ResizeObserver | null = null;
+
+// selection
+const rangeSelected = ref<undefined | [number, number]>(undefined);
+const startingRange = ref<undefined | [number, number]>(undefined);
+const inSelect = ref(false);
+const selected = ref(false);
+function startRangeSelection(start: number, end: number) {
+  inSelect.value = true;
+  selected.value = true;
+  
+  const rectified = rectifyOrder(start, end);
+  startingRange.value = rectified;
+  rangeSelected.value = rectified;
+}
+
+function updateRangeSelection(start: number, end: number) {
+  if (!inSelect.value) return;
+  
+  if (startingRange.value === undefined) {
+    startRangeSelection(start, end);
+  }
+
+  const upperBound = max([start, end, ...(startingRange.value as [number, number])]);
+  const lowerBound = min([start, end, ...(startingRange.value as [number, number])]);
+
+  if (upperBound === undefined || lowerBound === undefined){
+    return;
+  }
+
+  rangeSelected.value = [lowerBound, upperBound];
+}
+
+function completeSelection(){
+  selected.value = true;
+  inSelect.value = false;
+
+  if (rangeSelected.value === undefined) {
+    return
+  };
+  if (startingRange.value === undefined) {
+    return
+  };
+
+  emit("filter", ...rangeSelected.value);
+}
+
+function unselect() {
+  inSelect.value = false;
+  selected.value = false;
+  startingRange.value = undefined;
+  rangeSelected.value = undefined;
+  emit("cancelFilter");
+}
+
+function rectifyOrder(x: number, y: number): [number, number] {
+  if (x < y) {
+    return [x, y]
+  }
+  return [y, x]
+}
 
 // get ticks
 function generateTicks(min: number, max: number, n: number): number[] {
@@ -93,10 +154,6 @@ function draw() {
   .attr("width", width - margin.left - margin.right)
   .attr("height", height - margin.top - margin.bottom);
 
-  svg.on("mouseleave", function() {
-    emit("cancelFilter");
-  })
-
   // bars
   svg.append("g")
     .on("mouseleave", function() {
@@ -165,6 +222,8 @@ function draw() {
         overlay.selectAll("*").remove();
         svg.select(".x-axis").attr("opacity", "1");
       })
+      .on("mousedown", function() {})
+      .on("mouseup", function() {})
     .append("title")
       .text(d => `range: [${d.x0}, ${d.x1})\ncount: ${d.length}`);
 
