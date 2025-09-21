@@ -122,6 +122,12 @@ export const useDatasetStore = defineStore('dataset', () => {
     modelOutput.value = toModelDataRows(_df, MODEL_OUTPUT);
   }
 
+  function getInputDataRow(field: ScoreFieldKeys): ModelData[] {
+    if (df === undefined) return [];
+
+    return toModelDataRows(df, field);
+  }
+
   return {
     loaded,
     loadData,
@@ -129,6 +135,7 @@ export const useDatasetStore = defineStore('dataset', () => {
     runModel,
     df,
     modelOutput,
-    currentConfigSet
+    currentConfigSet,
+    getInputDataRow
   };
 })

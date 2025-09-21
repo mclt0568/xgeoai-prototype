@@ -7,7 +7,7 @@
     <div class="container">
       <div class="map-container">
         <div class="docked">
-          <map-render :data="filteredResult" map-id="map-model-output" />
+          <map-render :data="getDataRow(inspectingFactor, filterRange)" map-id="map-model-output" />
         </div>
         <div class="inspecting-overlay" :class="{'hidden': inspectingFactor === undefined}">
           <div class="inspection-tag">
@@ -31,7 +31,6 @@
 </template>
 
 <script lang="ts" setup>
-import { filter } from 'lodash';
 
 useHead({title: "XGeoAI Prototype"})
 
@@ -52,23 +51,31 @@ function closeInspection() {
 const filterRange = ref<[number, number]|undefined>(undefined);
 function onFilter(x0: number, x1: number) {
   filterRange.value = [x0, x1];
-  console.log("Filter");
 }
 function onFilterCancel(){
   filterRange.value = undefined;
-  console.log("thing");
+  console.log("thing", filterRange.value);
 }
 
 // filtered result
-const filteredResult = computed(() => {
-  if (filterRange.value === undefined){
-    return datasetStore.modelOutput;
+function getFilteredResult(range: [number, number] | undefined, data: ModelData[]) {
+  if (range === undefined){
+    return data;
+  }
+  
+  const [x0, x1] = range as [number, number];
+  
+  return data.filter(({value}) => value >= x0 && value < x1);
+}
+
+function getDataRow(inspectingFactor: ScoreFieldKeys | undefined, filterRange: [number, number] | undefined) {
+  if (inspectingFactor){
+    return datasetStore.getInputDataRow(inspectingFactor);
   }
 
-  const [x0, x1] = filterRange.value as [number, number];
-
-  return datasetStore.modelOutput.filter(({value}) => value >= x0 && value < x1);
-})
+  return getFilteredResult(filterRange, datasetStore.modelOutput);
+  
+}
 
 </script>
 

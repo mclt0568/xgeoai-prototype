@@ -24,7 +24,8 @@ export function initMap(mapName: string) {
       config: {
         basemap: {
           theme: 'monochrome',
-        }
+          lightPreset: 'day',
+        },
       },
       projection: 'mercator',
       zoom: 2,
@@ -45,17 +46,10 @@ export function initMap(mapName: string) {
   return map
 }
 
-// export const mapScheme: Array<[number, string]>  = [
-//   [0, '#DF342B',],
-//   [25, '#fdae61',],
-//   [50, '#F3FFBF',],
-//   [75, '#91DBA2',],
-//   [100, '#45B464',],
-// ]
-
 export const mapScheme: Array<[number, string]>  = [
   [0, '#F1E900',],
-  [100, '#007DEA',],
+  // [50, '#A5A5A5',],
+  [100, '#00A6FF',],
 ]
 export const chartScheme: Array<[number, string]>  = [
   [0, '#F1E900',],

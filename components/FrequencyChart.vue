@@ -1,11 +1,16 @@
 <template>
-  <div ref="wrap" class="chart w-full h-80"></div>
+  <div class="button-wrap">
+    <MenuButton @click="unselect" :class="{hidden: !showReset}" label="Reset selection"/>
+  </div>
+  <div ref="wrap" class="chart w-full h-80">
+  </div>
 </template>
 
 <script setup lang="ts">
 import * as d3 from "d3";
 import { ref, onMounted, onBeforeUnmount, watch, defineProps } from "vue";
 import { max, min } from "~/utils/misc";
+import MenuButton from "./MenuButton.vue";
 
 const props = withDefaults(defineProps<{
   values: Array<number | string>;
@@ -22,25 +27,95 @@ const emit = defineEmits<{
 const wrap = ref<HTMLElement | null>(null);
 let ro: ResizeObserver | null = null;
 
+// colour
+const color = d3.scaleLinear<number, string>()
+.domain(chartScheme.map(d => d[0]))
+// @ts-ignore
+.range(chartScheme.map(d => d[1]));
+
 // selection
+let cachedThresholds: number[] = [];
+let barSel: d3.Selection<SVGRectElement, d3.Bin<{v:number,i:number}, number>, any, any>;
+let startBinIdx = -1;
 const rangeSelected = ref<undefined | [number, number]>(undefined);
 const startingRange = ref<undefined | [number, number]>(undefined);
 const inSelect = ref(false);
 const selected = ref(false);
-function startRangeSelection(start: number, end: number) {
+const startingX = ref(0);
+const barWidth = ref(0);
+const showReset = ref(false);
+function binIndexFor(value: number, thresholds: number[]) {
+  let i = d3.bisectRight(thresholds, value) - 1;            // [x0, x1)
+  if (i < 0) i = 0;
+  if (i >= thresholds.length - 1) i = thresholds.length - 2;
+  return i;
+}
+
+function applySelection(range?: [number, number]) {
+  // @ts-ignore
+  if (!barSel) return;
+  if (!range) {
+    // reset to original color scheme
+    barSel.attr("fill", d => color(((d.x0 ?? 0) + (d.x1 ?? 0)) / 2));
+    showReset.value = false;
+    return;
+  }
+  const [s, e] = range;
+  barSel.attr("fill", d => {
+    const mid = ((d.x0 ?? 0) + (d.x1 ?? 0)) / 2;
+    return (mid >= s && mid < e) ? color(mid) : "lightgray";
+  });
+}
+function startRangeSelection(start: number, end: number, _startingX: number, _barWidth: number) {
   inSelect.value = true;
   selected.value = true;
-  
+
   const rectified = rectifyOrder(start, end);
   startingRange.value = rectified;
   rangeSelected.value = rectified;
+
+  startingX.value = _startingX;
+  barWidth.value = _barWidth;
+
+  window.addEventListener("mousemove", onMouseSelectMove);
+  window.addEventListener("mouseup", onMouseSelectComplete);
+}
+function onMouseSelectMove(event: MouseEvent){
+const currX = event.clientX;
+  const px = currX - startingX.value;
+  // use floor so 0..0.99 bar widths keeps offset 0
+  let offset = Math.floor(px / barWidth.value);
+
+  // clamp offset so we don't run past the ends
+  const lastIdx = cachedThresholds.length - 2;
+  offset = Math.max(-(startBinIdx), Math.min(offset, lastIdx - startBinIdx));
+
+  const i0 = startBinIdx;
+  const i1 = startBinIdx + offset;
+
+  const lo = Math.min(i0, i1);
+  const hi = Math.max(i0, i1);
+
+  const selStart = cachedThresholds[lo];
+  const selEnd   = cachedThresholds[hi + 1];     // +1 because bins are [xk, xk+1)
+
+  updateRangeSelection(selStart, selEnd);
+  if (rangeSelected.value) applySelection(rangeSelected.value);
+}
+function onMouseSelectComplete(){
+  selected.value = true;
+  inSelect.value = false;
+  showReset.value = true;
+  if (!rangeSelected.value) return;
+  emit("filter", ...rangeSelected.value);
+  applySelection(rangeSelected.value);   // keep final highlight
 }
 
 function updateRangeSelection(start: number, end: number) {
   if (!inSelect.value) return;
   
   if (startingRange.value === undefined) {
-    startRangeSelection(start, end);
+    return;
   }
 
   const upperBound = max([start, end, ...(startingRange.value as [number, number])]);
@@ -51,27 +126,15 @@ function updateRangeSelection(start: number, end: number) {
   }
 
   rangeSelected.value = [lowerBound, upperBound];
-}
-
-function completeSelection(){
-  selected.value = true;
-  inSelect.value = false;
-
-  if (rangeSelected.value === undefined) {
-    return
-  };
-  if (startingRange.value === undefined) {
-    return
-  };
-
   emit("filter", ...rangeSelected.value);
 }
 
 function unselect() {
-  inSelect.value = false;
+inSelect.value = false;
   selected.value = false;
   startingRange.value = undefined;
   rangeSelected.value = undefined;
+  applySelection(undefined);             // reset colors
   emit("cancelFilter");
 }
 
@@ -117,6 +180,8 @@ function draw() {
   const binSize = Math.max(+(props.binSize ?? 5), 1e-9); // avoid 0
   const thresholds = d3.range(min, max + binSize, binSize);
 
+  cachedThresholds = thresholds;
+
   // create bins
   const bin = d3.bin<{ v: number; i: number }, number>()
     .value(d => d.v)
@@ -140,12 +205,6 @@ function draw() {
     .attr("height", height)
     .attr("role", "img");
 
-  // colour
-  const color = d3.scaleLinear<number, string>()
-  .domain(chartScheme.map(d => d[0]))
-  // @ts-ignore
-  .range(chartScheme.map(d => d[1]));
-
   // container
   svg.append("rect")
   .attr("class", "bars-container")
@@ -157,7 +216,9 @@ function draw() {
   // bars
   svg.append("g")
     .on("mouseleave", function() {
-      emit("cancelFilter");
+      if (!(inSelect.value || selected.value)){
+        emit("cancelFilter");
+      }
     })
     .call(s => s.attr("class", "bars"))
     .selectAll("rect")
@@ -165,14 +226,15 @@ function draw() {
     .join("rect")
       .attr("x", d => x(d.x0!))
       .attr("y", d => y(d.length))
-      .attr("width", d => Math.max(0, x(d.x1!) - x(d.x0!) - 0)) // 1px gap
+      .attr("width", d => Math.max(0, x(d.x1!) - x(d.x0!) - 0)) // 0 px gap
       .attr("height", d => y(0) - y(d.length))
       .attr("fill", d => color(((d.x0 ?? 0) + (d.x1 ?? 0)) / 2))
       .on("mouseenter", function (_, d: d3.Bin<{v: number, i: number}, number>){
-        
-        // highlight bar
-        svg.selectAll(".bars rect").attr("fill", "lightgray");
-        d3.select(this).attr("fill", color(((d.x0 ?? 0) + (d.x1 ?? 0)) / 2));
+        if (!inSelect.value && !selected.value){
+          svg.selectAll(".bars rect").attr("fill", "lightgray");
+          d3.select(this).attr("fill", color(((d.x0 ?? 0) + (d.x1 ?? 0)) / 2));
+          emit("filter", d.x0 ?? 0, d.x1 ?? 0);
+        }
 
         const labelFmt = d3.format("~s");
         const tickLen = 6;
@@ -212,23 +274,35 @@ function draw() {
         .text(`${d.x0}-${d.x1}`)
         .attr("font-size", 10)
         .attr("fill", "#8D8D8D")
-
-        // emit filter
-        emit("filter", d.x0 ?? 0, d.x1 ?? 0);
       })
-      .on("mouseleave", function () {
-        /* @ts-ignore */
-        svg.selectAll(".bars rect").attr("fill", d => color(((d.x0 ?? 0) + (d.x1 ?? 0)) / 2));
+      .on("mouseleave", function (_, d: d3.Bin<{v: number, i: number}, number>) {
+        if (!inSelect.value && !selected.value){
+          /* @ts-ignore */
+          svg.selectAll(".bars rect").attr("fill", d => color(((d.x0 ?? 0) + (d.x1 ?? 0)) / 2));
+        }
         overlay.selectAll("*").remove();
         svg.select(".x-axis").attr("opacity", "1");
       })
-      .on("mousedown", function() {})
-      .on("mouseup", function() {})
+      .on("mousedown", function(event: MouseEvent, d: d3.Bin<{v: number, i: number}, number>) {
+        const currLeft = d.x0!;
+        const currRight = d.x1!;
+        startBinIdx = binIndexFor(currLeft, cachedThresholds);
+
+        startRangeSelection(
+          currLeft,
+          currRight,
+          event.clientX,
+          x(d.x1!) - x(d.x0!) - 0   // your 0px gap
+        );
+
+        applySelection([currLeft, currRight]);
+      })
     .append("title")
       .text(d => `range: [${d.x0}, ${d.x1})\ncount: ${d.length}`);
 
+  barSel = svg.selectAll<SVGRectElement, d3.Bin<{v:number,i:number}, number>>(".bars rect");
+
   const overlay = svg.append("g").attr("class", "hover");
-    
 
   // x axis label
   const xAxis = (g: d3.Selection<SVGGElement, unknown, null, undefined>) =>
@@ -286,4 +360,17 @@ watch(() => props.values, () => draw(), { deep: false });
 .chart :deep(.hover) {
   pointer-events: none;
 }
+
+.button-wrap {
+  width: fit-content;
+  margin-left: auto;
+  padding: 5px 10px 16px 10px;
+  margin-top: -28px;
+}
+
+.button-wrap>.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
 </style>
