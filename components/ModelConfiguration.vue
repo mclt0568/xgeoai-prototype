@@ -1,12 +1,14 @@
 <template>
-  <div class="model-configuration">
+  <div class="model-configuration" :class="{enabled: configuration.enabled}">
     <div @click="toggleModel" class="model-toggle">
       <toggle :toggled="configuration.enabled" />
       {{ fieldToName[configuration.field] }}
     </div>
     <div class="model-options" v-show="configuration.enabled">
       <range-input :min="0.01" :max="0.99" @update:value="updateModel" :value="configuration.scale" label="Contribution" />
-      <menu-button @click="onInspectionClick" :icon="configuration.biased ? 'carbon:warning-alt-filled' : undefined" :warning="configuration.biased" label="Inspect and adjust data..."/>
+      <menu-button @click="onInspectionClick" :icon="configuration.biased ? 'carbon:warning-alt-filled' : undefined" :warning="configuration.biased" label="Inspect and compare data..."/>
+      <collapsable-toggle v-model:expanded="expanded" label="Field Distribution"/>
+      <frequency-chart v-if="expanded" disable-filter :bin-size="1" :values="datasetStore.individualOutput[configuration.field].map(({value}) => value)" />
     </div>
   </div>
 </template>
@@ -14,10 +16,11 @@
 <script lang="ts" setup>
 import { throttle, update } from 'lodash';
 
-
 const props = withDefaults(defineProps<{
   configuration: Configuration
 }>(), {})
+
+const expanded = ref(false);
 
 const datasetStore = useDatasetStore();
 function toggleModel() {
@@ -46,6 +49,12 @@ function onInspectionClick() {
 <style lang="scss">
 @use "@/assets/scss/variables" as *;
 
+.model-configuration {
+  &.enabled {
+    padding-bottom: 30px;
+  }
+}
+
 .model-toggle{
   padding: 10px 16px;
   display: flex;
@@ -61,6 +70,6 @@ function onInspectionClick() {
   padding: 5px 16px 10px 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px
+  gap: 15px
 }
 </style>

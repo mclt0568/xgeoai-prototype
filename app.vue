@@ -25,6 +25,10 @@
           @filter="onFilter"
           @cancel-filter="onFilterCancel"
         />
+        <field-toolbox
+          v-if="inspectingFactor"
+          :configuration="datasetStore.currentConfigSet[inspectingFactor]"
+        />
       </div>
     </div>
   </div>
@@ -40,6 +44,7 @@ datasetStore.loadData("/data/data.csv");
 // inspect and adjust
 const inspectingFactor = ref<ScoreFieldKeys | undefined>(undefined);
 function inspectFactor(scoreKey: ScoreFieldKeys) {
+  filterRange.value = undefined;
   inspectingFactor.value = scoreKey;
 }
 

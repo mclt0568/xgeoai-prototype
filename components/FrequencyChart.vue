@@ -1,5 +1,5 @@
 <template>
-  <div class="button-wrap">
+  <div v-if="!disableFilter" class="button-wrap">
     <MenuButton @click="unselect" :class="{hidden: !showReset}" label="Reset selection"/>
   </div>
   <div ref="wrap" class="chart w-full h-80">
@@ -14,9 +14,11 @@ import MenuButton from "./MenuButton.vue";
 
 const props = withDefaults(defineProps<{
   values: Array<number | string>;
-  binSize?: number
+  binSize?: number,
+  disableFilter?: boolean
 }>(), {
   binSize: 1.5,
+  disableFilter: false,
 });
 
 const emit = defineEmits<{
@@ -67,6 +69,8 @@ function applySelection(range?: [number, number]) {
   });
 }
 function startRangeSelection(start: number, end: number, _startingX: number, _barWidth: number) {
+  if (props.disableFilter) return;
+  
   inSelect.value = true;
   selected.value = true;
 
@@ -348,7 +352,7 @@ watch(() => props.values, () => draw(), { deep: false });
 .h-80 { height: 20rem; }
 
 .chart {
-  margin-top: 10px;
+  margin-top: 0px;
 }
 
 .chart :deep(.bars-container) {

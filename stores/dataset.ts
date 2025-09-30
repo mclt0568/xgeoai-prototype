@@ -22,6 +22,13 @@ export const useDatasetStore = defineStore('dataset', () => {
   let df: dfd.DataFrame | undefined = undefined;
   const modelOutput = ref<ModelData[]>([]);
   const currentConfigSet = ref<ConfigurationSet>(getDefaultConfigurationSet());
+  const individualOutput = ref<Record<ScoreFieldKeys, ModelData[]>>({
+    score_distance_nature_land: [],
+    score_km: [],
+    score_solar_radiation: [],
+    score_wind_capacity: [],
+    score_wind_correlation: []
+  });
 
   async function loadData(url: string) {
     
@@ -120,6 +127,9 @@ export const useDatasetStore = defineStore('dataset', () => {
 
     df = _df;
     modelOutput.value = toModelDataRows(_df, MODEL_OUTPUT);
+    
+    for (const field of ScoreFieldKeyConstants)
+      individualOutput.value[field] = toModelDataRows(_df, scaledFieldOf(field));
   }
 
   function getInputDataRow(field: ScoreFieldKeys): ModelData[] {
@@ -136,6 +146,7 @@ export const useDatasetStore = defineStore('dataset', () => {
     df,
     modelOutput,
     currentConfigSet,
-    getInputDataRow
+    getInputDataRow,
+    individualOutput
   };
 })
