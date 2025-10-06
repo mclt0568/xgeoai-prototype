@@ -9,8 +9,6 @@
 
 <script lang="ts" setup>
 
-function filter
-
 const datasetStore = useDatasetStore();
 
 const props = withDefaults(defineProps<{

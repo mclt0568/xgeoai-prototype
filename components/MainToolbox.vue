@@ -4,13 +4,23 @@
       <model-configuration @inspect="onInspectionClick" v-for="configuration of configurations" v-bind:key="configuration.field" :configuration="configuration"/>
     </toolbox-section>
     <toolbox-section title="Result Distribution">
-      <frequency-chart @filter="onFilter" @cancel-filter="onFilterCancel" :values="resultValues"/>
+      <!-- <frequency-chart @filter="onFilter" @cancel-filter="onFilterCancel" :values="resultValues"/> -->
+      <div class="chart-container" style="height: 300px">
+        <chart :data="resultValues" :domain="[0, 100]" :thresholds="50" />
+      </div>
     </toolbox-section>
-    <!-- <toolbox-section title="Pinned Location"></toolbox-section> -->
+    <!-- <div class="chart-container" style="height: 300px">
+      <chart :data="[0.1, 0.1, 0.2, 0.4, 0.5, 0.92]" :domain="[0, 1]" :thresholds="50" v-model:selected-data="x"/>
+    </div> -->
   </div>
 </template>
 
 <script lang="ts" setup>
+
+const x = ref<number[] | null>(null);
+// const x = ref([0.1, 0.2]);
+const update = () => {x.value = [0.1]}
+
 const props = withDefaults(defineProps<{
   configurations: Record<ScoreFieldKeys, Configuration>,
   result: ModelData[],

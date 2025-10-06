@@ -46,6 +46,10 @@ export const useDatasetStore = defineStore('dataset', () => {
     df = _df;
     
     ScoreFieldKeyConstants.forEach(k => applyAdjustments(k, true));
+    
+    for (const field of ScoreFieldKeyConstants)
+      individualOutput.value[field] = toModelDataRows(_df, field);
+
     runModel();
   }
 
@@ -128,8 +132,8 @@ export const useDatasetStore = defineStore('dataset', () => {
     df = _df;
     modelOutput.value = toModelDataRows(_df, MODEL_OUTPUT);
     
-    for (const field of ScoreFieldKeyConstants)
-      individualOutput.value[field] = toModelDataRows(_df, scaledFieldOf(field));
+    // for (const field of ScoreFieldKeyConstants)
+    //   individualOutput.value[field] = toModelDataRows(_df, scaledFieldOf(field));
   }
 
   function getInputDataRow(field: ScoreFieldKeys): ModelData[] {

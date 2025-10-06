@@ -8,7 +8,10 @@
       <range-input :min="0.01" :max="0.99" @update:value="updateModel" :value="configuration.scale" label="Contribution" />
       <menu-button @click="onInspectionClick" :icon="configuration.biased ? 'carbon:warning-alt-filled' : undefined" :warning="configuration.biased" label="Inspect and compare data..."/>
       <collapsable-toggle v-model:expanded="expanded" label="Field Distribution"/>
-      <frequency-chart v-if="expanded" disable-filter :bin-size="1" :values="datasetStore.individualOutput[configuration.field].map(({value}) => value)" />
+      <!-- <chart v-if="expanded" disable-filter :bin-size="1" :values="datasetStore.individualOutput[configuration.field].map(({value}) => value)" /> -->
+      <div v-if="expanded" class="chart-container" style="height: 300px">
+        <chart :data="datasetStore.individualOutput[configuration.field].map(({value}) => value)" :domain="[0, 100]" :thresholds="50" />
+      </div>
     </div>
   </div>
 </template>
