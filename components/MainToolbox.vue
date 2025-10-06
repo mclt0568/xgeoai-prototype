@@ -6,7 +6,7 @@
     <toolbox-section title="Result Distribution">
       <!-- <frequency-chart @filter="onFilter" @cancel-filter="onFilterCancel" :values="resultValues"/> -->
       <div class="chart-container" style="height: 300px">
-        <chart :data="resultValues" :domain="[0, 100]" :thresholds="50" />
+        <chart @filter="onFilter" @cancel-filter="onFilterCancel" :selected-data="selectedData" :data="resultValues" :domain="[0, 100]" :thresholds="50" />
       </div>
     </toolbox-section>
     <!-- <div class="chart-container" style="height: 300px">
@@ -17,10 +17,6 @@
 
 <script lang="ts" setup>
 
-const x = ref<number[] | null>(null);
-// const x = ref([0.1, 0.2]);
-const update = () => {x.value = [0.1]}
-
 const props = withDefaults(defineProps<{
   configurations: Record<ScoreFieldKeys, Configuration>,
   result: ModelData[],
@@ -28,6 +24,19 @@ const props = withDefaults(defineProps<{
 
 const resultValues = computed(() => props.result.map(({value})=>value));
 
+const datasetStore = useDatasetStore();
+const selectedData = computed(() => {
+  if (datasetStore.currentlyFilteredOn === undefined) {
+    return null;
+  }
+
+  if (datasetStore.currentlyFilteredOn === MODEL_OUTPUT) {
+    return null;
+  }
+
+
+  return datasetStore.filteredResult.map(({value}) => value);
+});
 
 // when filter by frequency chart
 function onFilter(x0: number, x1: number) {

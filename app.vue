@@ -7,7 +7,7 @@
     <div class="container">
       <div class="map-container">
         <div class="docked">
-          <map-render :data="getDataRow(inspectingFactor, filterRange)" map-id="map-model-output" />
+          <map-render :data="mapResult" map-id="map-model-output" />
         </div>
         <div class="inspecting-overlay" :class="{'hidden': inspectingFactor === undefined}">
           <div class="inspection-tag">
@@ -41,6 +41,19 @@ useHead({title: "XGeoAI Prototype"})
 const datasetStore = useDatasetStore();
 datasetStore.loadData("/data/data.csv");
 
+const mapResult = computed(() => {
+  if (datasetStore.currentlyFilteredOn === MODEL_OUTPUT){
+    return datasetStore.filteredResult;
+  }
+  
+  if (datasetStore.currentlyFilteredOn === undefined){
+    return datasetStore.modelOutput;
+  }
+  
+  return datasetStore.filteredResult;
+  // return datasetStore.individualFiltered[datasetStore.currentlyFilteredOn];
+})
+
 // inspect and adjust
 const inspectingFactor = ref<ScoreFieldKeys | undefined>(undefined);
 function inspectFactor(scoreKey: ScoreFieldKeys) {
@@ -55,32 +68,34 @@ function closeInspection() {
 // filter model output
 const filterRange = ref<[number, number]|undefined>(undefined);
 function onFilter(x0: number, x1: number) {
-  filterRange.value = [x0, x1];
+  // filterRange.value = [x0, x1];
+  datasetStore.filterFromRange("_model_output", x0, x1);
 }
 function onFilterCancel(){
-  filterRange.value = undefined;
-  console.log("thing", filterRange.value);
+  datasetStore.cancelFilter();
+  // filterRange.value = undefined;
+  // console.log("thing", filterRange.value);
 }
 
-// filtered result
-function getFilteredResult(range: [number, number] | undefined, data: ModelData[]) {
-  if (range === undefined){
-    return data;
-  }
+// // filtered result
+// function getFilteredResult(range: [number, number] | undefined, data: ModelData[]) {
+//   if (range === undefined){
+//     return data;
+//   }
   
-  const [x0, x1] = range as [number, number];
+//   const [x0, x1] = range as [number, number];
   
-  return data.filter(({value}) => value >= x0 && value < x1);
-}
+//   return data.filter(({value}) => value >= x0 && value < x1);
+// }
 
-function getDataRow(inspectingFactor: ScoreFieldKeys | undefined, filterRange: [number, number] | undefined) {
-  if (inspectingFactor){
-    return datasetStore.getInputDataRow(inspectingFactor);
-  }
+// function getDataRow(inspectingFactor: ScoreFieldKeys | undefined, filterRange: [number, number] | undefined) {
+//   if (inspectingFactor){
+//     return datasetStore.getInputDataRow(inspectingFactor);
+//   }
 
-  return getFilteredResult(filterRange, datasetStore.modelOutput);
+//   return getFilteredResult(filterRange, datasetStore.modelOutput);
   
-}
+// }
 
 </script>
 

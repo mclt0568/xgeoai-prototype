@@ -2,6 +2,7 @@ import type { Feature, FeatureCollection, Polygon } from 'geojson';
 import { defineStore } from 'pinia'
 import { isOfType } from '@/utils/misc';
 import * as dfd from "danfojs";
+import { filter } from 'lodash';
 
 const FIELD_KEEP = ["Latitude", "Longitude"];
 
@@ -29,6 +30,15 @@ export const useDatasetStore = defineStore('dataset', () => {
     score_wind_capacity: [],
     score_wind_correlation: []
   });
+  const individualFiltered = ref<Record<ScoreFieldKeys, ModelData[]>>({
+    score_distance_nature_land: [],
+    score_km: [],
+    score_solar_radiation: [],
+    score_wind_capacity: [],
+    score_wind_correlation: []
+  });
+  const filteredResult = ref<ModelData[]>([]);
+  const currentlyFilteredOn = ref<ScoreFieldKeys | typeof MODEL_OUTPUT | undefined>(undefined);
 
   async function loadData(url: string) {
     
@@ -47,8 +57,11 @@ export const useDatasetStore = defineStore('dataset', () => {
     
     ScoreFieldKeyConstants.forEach(k => applyAdjustments(k, true));
     
-    for (const field of ScoreFieldKeyConstants)
-      individualOutput.value[field] = toModelDataRows(_df, field);
+    for (const field of ScoreFieldKeyConstants){
+      const data = toModelDataRows(_df, field);
+      individualOutput.value[field] = [...data];
+      individualFiltered.value[field] = [...data];
+    }
 
     runModel();
   }
@@ -80,6 +93,11 @@ export const useDatasetStore = defineStore('dataset', () => {
 
   function setContribution(field: ScoreFieldKeys, contribution: number, preventModelExec: boolean = false) {
     if (df === undefined) return;
+
+    if (currentlyFilteredOn !== undefined) {
+      cancelFilter();
+    }
+
     const currentConfigs = currentConfigSet.value;
     const scales: [ScoreFieldKeys, number][] = (Object.entries(currentConfigs) as [ScoreFieldKeys, Configuration][]).map(([f, c]) => ([f, c.scale]));
     let totalOthers = 0;
@@ -130,7 +148,10 @@ export const useDatasetStore = defineStore('dataset', () => {
     _df.addColumn(MODEL_OUTPUT, summed, { inplace: true });
 
     df = _df;
-    modelOutput.value = toModelDataRows(_df, MODEL_OUTPUT);
+
+    const data = toModelDataRows(_df, MODEL_OUTPUT)
+    modelOutput.value = data;
+    filteredResult.value = data;
     
     // for (const field of ScoreFieldKeyConstants)
     //   individualOutput.value[field] = toModelDataRows(_df, scaledFieldOf(field));
@@ -142,6 +163,37 @@ export const useDatasetStore = defineStore('dataset', () => {
     return toModelDataRows(df, field);
   }
 
+  function filterFromRange(field: ScoreFieldKeys | typeof MODEL_OUTPUT, x0: number, x1: number) {
+    if (df == undefined) {
+      return;
+    }
+    
+    currentlyFilteredOn.value = field;
+    
+    const mask = df.loc({ columns: [field] }).values.map(v => (x0 <= (v as number)) && ((v as number) < x1));
+    const filtered = df.loc({rows: mask});
+    
+    const data = toModelDataRows(filtered, MODEL_OUTPUT)
+    filteredResult.value = data;
+    
+    for (const field of ScoreFieldKeyConstants){
+      individualFiltered.value[field] = toModelDataRows(filtered, field);
+    }
+  }
+
+  function filterFromLocation(x0: number, x1: number, y0: number, y1: number) {
+    
+  }
+
+  function cancelFilter() {
+    console.log("called");
+    filteredResult.value = modelOutput.value;
+    for (const field of ScoreFieldKeyConstants){
+      individualFiltered.value[field] = [...individualOutput.value[field]];
+    }
+    currentlyFilteredOn.value = undefined;
+  }
+
   return {
     loaded,
     loadData,
@@ -151,6 +203,11 @@ export const useDatasetStore = defineStore('dataset', () => {
     modelOutput,
     currentConfigSet,
     getInputDataRow,
-    individualOutput
+    individualOutput,
+    filterFromRange,
+    cancelFilter,
+    currentlyFilteredOn,
+    individualFiltered,
+    filteredResult,
   };
 })

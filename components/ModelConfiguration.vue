@@ -6,11 +6,11 @@
     </div>
     <div class="model-options" v-show="configuration.enabled">
       <range-input :min="0.01" :max="0.99" @update:value="updateModel" :value="configuration.scale" label="Contribution" />
-      <menu-button @click="onInspectionClick" :icon="configuration.biased ? 'carbon:warning-alt-filled' : undefined" :warning="configuration.biased" label="Inspect and compare data..."/>
+      <!-- <menu-button @click="onInspectionClick" :icon="configuration.biased ? 'carbon:warning-alt-filled' : undefined" :warning="configuration.biased" label="Inspect and compare data..."/> -->
       <collapsable-toggle v-model:expanded="expanded" label="Field Distribution"/>
       <!-- <chart v-if="expanded" disable-filter :bin-size="1" :values="datasetStore.individualOutput[configuration.field].map(({value}) => value)" /> -->
       <div v-if="expanded" class="chart-container" style="height: 300px">
-        <chart :data="datasetStore.individualOutput[configuration.field].map(({value}) => value)" :domain="[0, 100]" :thresholds="50" />
+        <chart @filter="onFilter" @cancel-filter="onFilterCancel" :data="datasetStore.individualOutput[configuration.field].map(({value}) => value)" :selected-data="selectedData" :domain="[0, 100]" :thresholds="50" />
       </div>
     </div>
   </div>
@@ -23,9 +23,29 @@ const props = withDefaults(defineProps<{
   configuration: Configuration
 }>(), {})
 
+
 const expanded = ref(false);
 
 const datasetStore = useDatasetStore();
+const selectedData = computed(() => {
+  if (datasetStore.currentlyFilteredOn === undefined) {
+    return null;
+  }
+  
+  if (datasetStore.currentlyFilteredOn === props.configuration.field) {
+    return null;
+  }
+
+  return datasetStore.individualFiltered[props.configuration.field].map(({value}) => value);
+})
+
+function onFilter(x0: number, x1: number) {
+  datasetStore.filterFromRange(props.configuration.field, x0, x1);
+}
+function onFilterCancel() {
+  datasetStore.cancelFilter();
+}
+
 function toggleModel() {
   const enabled = props.configuration.enabled;
   datasetStore.setContribution(props.configuration.field, enabled ? 0 : 0.2);

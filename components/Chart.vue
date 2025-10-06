@@ -1,20 +1,22 @@
 <template>
   <div class="bin-chart" draggable="false">
-    <div class="chart-container" @mouseleave="onChartExit">
-      <div class="stacked">
-        <div class="stacked">
-          <div class="bars" v-show="hasSelection || normalHover !== -1"> <!-- hover effect -->
+    <div class="chart-container" @mouseleave="onChartExit" draggable="false">
+      <div class="stacked" draggable="false">
+        <div class="stacked" draggable="false">
+          <div class="bars" v-show="hasSelection || normalHover !== -1" draggable="false"> <!-- hover effect -->
             <div
             v-for="[idx, _] in selectedPortions"
+            draggable="false"
             class="bar"
             :class="{'hover-effect': (inRangeLoose(startingValue[2], endingValue[2], idx) && hasHardSelection) || normalHover === idx || idx === temporaryHovers }"
             style="height: 100%;"
             ></div>
             
           </div>
-          <div class="bars"> <!-- bottom (base) -->
+          <div class="bars" draggable="false"> <!-- bottom (base) -->
             <div 
               v-for="b in dataBin" 
+              draggable="false"
               class="bar" 
               :class="{
                 gray: hasSelection, 
@@ -42,17 +44,17 @@
             @mouseenter="() => onBarEnter(x0, x1, idx)" 
             @mousedown="() => onMouseDown(x0, x1, idx)"/>
         </div>
-        <div class="overlay">
-          <div class="overlay-container" v-if="hasSelection && temporaryHovers === -1">
-            <div>Score Range: {{ selectingHoverStats?.range[0] }} ~ {{ selectingHoverStats?.range[1] }}</div>
-            <div>Number of Locations: {{ selectingHoverStats?.n }}</div>
-            <div v-show="hasHardSelection || selectedData"><a @click="() => unselect()">Unselect</a></div>
+        <div class="overlay" draggable="false">
+          <div class="overlay-container" v-if="hasSelection && temporaryHovers === -1" draggable="false">
+            <div>Score Range: <span>{{ selectingHoverStats?.range[0] }} ~ {{ selectingHoverStats?.range[1] }}</span></div>
+            <div>n Locations: <span>{{ selectingHoverStats?.n }}</span> out of {{ data.length }}</div>
+            <div draggable="false" v-show="hasHardSelection"><a draggable="false" @click="() => unselect()">Unselect</a></div>
           </div>
-          <div class="overlay-container" v-if="temporaryHovers !== -1">
-            <div>Score Range: {{ dataBin[temporaryHovers].x0 }} ~ {{ dataBin[temporaryHovers].x1 }}</div>
-            <div>Highlighted: {{ selectedPortions[temporaryHovers][1] }} out of {{ dataBin[temporaryHovers].data.length }} Locations</div>
+          <div class="overlay-container" v-if="temporaryHovers !== -1" draggable="false">
+            <div>Score Range: <span>{{ dataBin[temporaryHovers].x0 }} ~ {{ dataBin[temporaryHovers].x1 }}</span></div>
+            <div>Highlighted: <span>{{ selectedPortions[temporaryHovers][1] }}</span> out of {{ dataBin[temporaryHovers].data.length }}</div>
             <!-- <div>Number of points: {{ selectingHoverStats?.n }}</div> -->
-            <div><a @click="() => unselect()">Unselect</a></div>
+            <!-- <div draggable="false"><a draggable="false" @click="() => unselect()">Unselect</a></div> -->
           </div>
         </div>
       </div>
@@ -131,6 +133,12 @@ const endingValue = ref<[number, number, number]>([0, 0, 0])
 const temporaryHovers = ref<number>(-1);
 const normalHover = ref<number>(-1);
 function onMouseDown(x0: number, x1: number, idx: number) {
+  if (currentlySelecting.value) {
+    window.removeEventListener("mouseup", onMouseUp);
+    window.addEventListener("mouseup", onMouseUp);
+    return;
+  }
+  
   temporaryHovers.value = -1;
   currentlySelecting.value = true;
   hasSelection.value = true;
@@ -141,7 +149,13 @@ function onMouseDown(x0: number, x1: number, idx: number) {
   endingValue.value = [x0, x1, idx];
 }
 function onMouseUp() {
-  emit("hardFilter", startingValue.value[0], endingValue.value[1]);
+  if (startingValue.value[2] > endingValue.value[2]) {
+    emit("filter", endingValue.value[0], startingValue.value[1]);
+  }
+  else {
+    emit("filter", startingValue.value[0], endingValue.value[1]);
+  }
+
   currentlySelecting.value = false;
   hasHardSelection.value = true;
   window.removeEventListener("mouseup", onMouseUp);
@@ -152,9 +166,11 @@ function onBarEnter(x0: number, x1: number, idx: number) {
     
     if (startingValue.value[2] > endingValue.value[2]){
       updateSelectedPortion(dataBin.value.slice(endingValue.value[2], startingValue.value[2] + 1).flatMap(({data}) => data));
+      emit("filter", endingValue.value[0], startingValue.value[1]);
     }
     else {
       updateSelectedPortion(dataBin.value.slice(startingValue.value[2], endingValue.value[2] + 1).flatMap(({data}) => data));
+      emit("filter", startingValue.value[0], endingValue.value[1]);
     }
     
     return;
@@ -166,7 +182,7 @@ function onBarEnter(x0: number, x1: number, idx: number) {
   
   if ((props.selectedData ?? []).length !== 0) {
     temporaryHovers.value = idx;
-    emit("filter", x0, x1);
+    // emit("filter", x0, x1);
     return;
   }
   
@@ -175,25 +191,17 @@ function onBarEnter(x0: number, x1: number, idx: number) {
   normalHover.value = idx;
   emit("filter", x0, x1);
 }
-function onBarExit(x0: number, x1: number, idx: number) {
-  if (currentlySelecting){
-    return;
-  }
-  
-  if (hasHardSelection.value){
-    return;
-  }
-}
 function onChartExit() {
   temporaryHovers.value = -1;
   normalHover.value = -1;
   if (!hasSelection.value && !hasHardSelection.value) {
     updateSelectedPortion([]);
+    emit("cancelFilter");
   }
   if (!hasHardSelection.value && !props.selectedData) {
     hasSelection.value = false;
+    emit("cancelFilter");
   }
-  emit("cancelFilter");
 }
 function unselect(updatePortion: boolean = true) {
   temporaryHovers.value = -1;
@@ -206,7 +214,7 @@ function unselect(updatePortion: boolean = true) {
   if (updatePortion){
     updateSelectedPortion([]);
     emit("update:selectedData", null);
-    emit("cancelHardFilter");
+    emit("cancelFilter");
   }
 }
 
@@ -374,6 +382,10 @@ $padding: 20px;
     font-size: 12px;
     color: #505050;
     user-select: none;
+  }
+
+  span {
+    color: $accent;
   }
   
 }
