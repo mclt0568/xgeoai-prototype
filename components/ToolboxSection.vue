@@ -1,7 +1,9 @@
 <template>
-  <div class="toolbox-section" :class="{first}">
+  <div class="toolbox-section-container">
     <div class="title">{{ props.title }}</div>
-    <slot/>
+    <div class="toolbox-section" :class="{first}">
+      <slot/>
+    </div>
   </div>
 </template>
 
@@ -24,6 +26,8 @@ const props = withDefaults(defineProps<{
   padding: 10px 0px;
   width: 100%;
   border-top: 1px solid $border;
+  display: flex;
+  // flex
 
   &.first { border: none; }
 }
@@ -32,6 +36,10 @@ const props = withDefaults(defineProps<{
   font-size: 14px;
   font-weight: 500;
   user-select: none;
-  padding: 0 16px;
+  padding: 5px 16px;
+}
+
+.toolbox-section-container {
+  border-right: 1px solid $border;
 }
 </style>

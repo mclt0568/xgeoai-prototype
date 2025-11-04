@@ -1,15 +1,15 @@
 <template>
-  <div class="model-configuration" :class="{enabled: configuration.enabled}">
+  <div draggable="false" class="model-configuration" :class="{enabled: configuration.enabled}">
     <div @click="toggleModel" class="model-toggle">
       <toggle :toggled="configuration.enabled" />
       {{ fieldToName[configuration.field] }}
     </div>
-    <div class="model-options" v-show="configuration.enabled">
+    <div draggable="false" class="model-options" v-show="configuration.enabled">
       <range-input :min="0.01" :max="0.99" @update:value="updateModel" :value="configuration.scale" label="Contribution" />
       <!-- <menu-button @click="onInspectionClick" :icon="configuration.biased ? 'carbon:warning-alt-filled' : undefined" :warning="configuration.biased" label="Inspect and compare data..."/> -->
-      <collapsable-toggle v-model:expanded="expanded" label="Field Distribution"/>
+      <!-- <collapsable-toggle v-model:expanded="expanded" label="Field Distribution"/> -->
       <!-- <chart v-if="expanded" disable-filter :bin-size="1" :values="datasetStore.individualOutput[configuration.field].map(({value}) => value)" /> -->
-      <div v-if="expanded" class="chart-container" style="height: 300px">
+      <div draggable="false" class="chart-container" style="height: 300px">
         <chart @filter="onFilter" @cancel-filter="onFilterCancel" :data="datasetStore.individualOutput[configuration.field].map(({value}) => value)" :selected-data="selectedData" :domain="[0, 100]" :thresholds="50" />
       </div>
     </div>
@@ -76,6 +76,8 @@ function onInspectionClick() {
   &.enabled {
     padding-bottom: 30px;
   }
+
+  width: 300px;
 }
 
 .model-toggle{

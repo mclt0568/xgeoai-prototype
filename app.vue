@@ -154,6 +154,7 @@ function onFilterCancel(){
   height: calc(100vh - 40px);
   display: flex;
   align-items: stretch;
+  flex-direction: column;
 }
 
 .map-container {
@@ -219,7 +220,7 @@ function onFilterCancel(){
 }
 
 .toolbox-container {
-  width: 300px;
+  height: 420px;
   border-left: $border 1px solid;
   overflow: scroll;
 }

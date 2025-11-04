@@ -1,9 +1,14 @@
 <template>
   <div class="main-toolbox">
-    <toolbox-section first title="Model Configuration">
+    <!-- <div class="hint-container">
+      <div class="hint">
+        Right click and drag to select a section on the graph. 
+      </div>
+    </div> -->
+    <toolbox-section title="Model Configuration">
       <model-configuration @inspect="onInspectionClick" v-for="configuration of configurations" v-bind:key="configuration.field" :configuration="configuration"/>
     </toolbox-section>
-    <toolbox-section title="Result Distribution">
+    <toolbox-section :title="`Result Distribution (${Object.values(configurations).filter(({enabled}) => enabled).length} factors enabled)`">
       <!-- <frequency-chart @filter="onFilter" @cancel-filter="onFilterCancel" :values="resultValues"/> -->
       <div class="chart-container" style="height: 300px">
         <chart @filter="onFilter" @cancel-filter="onFilterCancel" :selected-data="selectedData" :data="resultValues" :domain="[0, 100]" :thresholds="50" />
@@ -16,6 +21,8 @@
 </template>
 
 <script lang="ts" setup>
+import _ from 'lodash';
+
 
 const props = withDefaults(defineProps<{
   configurations: Record<ScoreFieldKeys, Configuration>,
@@ -58,5 +65,25 @@ function onInspectionClick(scoreKey: ScoreFieldKeys) {
 }
 </script>
 
-<style>
+<style lang="scss" scoped>
+@use "~/assets/scss/variables" as *;
+
+.hint-container {
+  padding: 16px;
+}
+.hint {
+  padding: 10px;
+  background: $accent-background;
+  border: $accent-weak 1px solid;
+  border-radius: 4px;
+  color: $foreground;
+  font-size: 14px;
+}
+.main-toolbox {
+  display: flex;
+  flex-direction: row;
+}
+.chart-container{
+  width: 300px;
+}
 </style>
