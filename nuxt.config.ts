@@ -9,5 +9,6 @@ export default defineNuxtConfig({
       mapboxToken: process.env.MAPBOX_TOKEN
     }
   },
-  ssr: false,
+  ssr: true,
+  nitro: {static: true}
 })

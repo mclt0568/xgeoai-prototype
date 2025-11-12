@@ -39,7 +39,7 @@
 useHead({title: "XGeoAI Prototype"})
 
 const datasetStore = useDatasetStore();
-datasetStore.loadData("/data/data.csv");
+datasetStore.loadData("./data/data.csv");
 
 const mapResult = computed(() => {
   if (datasetStore.currentlyFilteredOn === MODEL_OUTPUT){
